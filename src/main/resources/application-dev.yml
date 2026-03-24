@@ -1,0 +1,12 @@
+server:
+  port: 8081
+
+logging:
+  level:
+    com.mipt.sharipovrazil: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.beans: DEBUG
+
+app:
+  name: "To-Do List Manager DEV"
+  version: "1.0.0-DEV"
