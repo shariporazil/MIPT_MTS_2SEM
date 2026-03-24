@@ -1,0 +1,47 @@
+# Compiled files
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# IDE files
+.idea/
+*.iml
+*.iws
+*.ipr
+.settings/
+.classpath
+.project
+.springBeans
+
+# Eclipse
+.settings/
+.metadata/
+
+# VS Code
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Test uploads
+uploads/
+target/test-uploads/
+
+# Application properties (если есть секреты)
+# application-local.yml
+# application-dev.yml
+
+# Maven
+.mvn/
+mvnw
+mvnw.cmd
+
+# Spring Boot
+spring-boot-devtools.pid
