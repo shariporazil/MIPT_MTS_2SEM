@@ -1,0 +1,36 @@
+server:
+  port: 0
+
+spring:
+  main:
+    allow-bean-definition-overriding: true
+    allow-circular-references: true
+    banner-mode: off
+  web:
+    resources:
+      add-mappings: false
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+app:
+  name: "To-Do List Manager TEST"
+  version: "1.0.0-TEST"
+  api:
+    version: "2.0.0"
+  upload:
+    dir: target/test-uploads
+  cors:
+    enabled: false
+
+logging:
+  level:
+    root: ERROR
+    com.mipt.sharipovrazil: ERROR
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
