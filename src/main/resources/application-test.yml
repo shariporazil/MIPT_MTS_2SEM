@@ -1,11 +1,16 @@
-server:
-  port: 8082
+spring:
+  datasource:
+    url: jdbc:h2:mem:todo_test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
 
 logging:
   level:
-    com.mipt.sharipovrazil: DEBUG
-    org.springframework.web: DEBUG
-
-app:
-  name: "To-Do List Manager TEST"
-  version: "1.0.0-TEST"
+    com.mipt.sharipovrazil: INFO
