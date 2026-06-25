@@ -7,7 +7,7 @@ import com.mipt.sharipovrazil.dto.validation.OnCreate;
 import com.mipt.sharipovrazil.dto.validation.OnUpdate;
 import com.mipt.sharipovrazil.service.TaskService;
 import com.mipt.sharipovrazil.scope.RequestScopedBean;
-import com.mipt.sharipovrazil.model.Task;  // Добавьте этот импорт
+import com.mipt.sharipovrazil.model.Task;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

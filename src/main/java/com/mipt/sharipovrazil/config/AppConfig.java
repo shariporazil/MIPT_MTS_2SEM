@@ -1,10 +1,9 @@
 package com.mipt.sharipovrazil.config;
 
 import com.mipt.sharipovrazil.repository.StubTaskRepository;
-import com.mipt.sharipovrazil.repository.TaskRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
 /**
  * Конфигурационный класс для явного создания бинов.
  *
@@ -17,12 +16,28 @@ import org.springframework.context.annotation.Configuration;
  * который будет использоваться вместе с {@link org.springframework.beans.factory.annotation.Qualifier}
  * для демонстрации внедрения конкретной реализации.</p>
  */
-
 @Configuration
 public class AppConfig {
 
-    @Bean(name = "stubTaskRepository")
-    public TaskRepository stubTaskRepository() {
-        return new StubTaskRepository();
-    }
+    @Value("${app.name}")
+    private String appName;
+
+    @Value("${app.version}")
+    private String appVersion;
+
+    @Value("${app.api.version}")
+    private String apiVersion;
+
+    @Value("${app.upload.dir}")
+    private String uploadDir;
+
+    @Value("${app.cors.allowed-origin}")
+    private String corsAllowedOrigin;
+
+    // Getters
+    public String getAppName() { return appName; }
+    public String getAppVersion() { return appVersion; }
+    public String getApiVersion() { return apiVersion; }
+    public String getUploadDir() { return uploadDir; }
+    public String getCorsAllowedOrigin() { return corsAllowedOrigin; }
 }
