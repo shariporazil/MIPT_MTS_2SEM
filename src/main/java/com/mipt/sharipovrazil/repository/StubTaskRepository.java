@@ -18,15 +18,24 @@ public class StubTaskRepository implements TaskRepository {
     private long currentId = 1;
 
     public StubTaskRepository() {
-        save(new Task(null, "Изучить Spring", "Понять DI и AOP", false));
-        save(new Task(null, "Написать код", "Сделать все эндпоинты", false));
-        save(new Task(null, "Сделать тесты", "Покрыть код тестми", true));
-        save(new Task(null, "Сдать домашку", "Получить 9 баллов", false));
+        Task task1 = new Task();
+        task1.setId(currentId++);
+        task1.setTitle("Test Task 1");
+        task1.setDescription("Description 1");
+        tasks.put(task1.getId(), task1);
+
+        Task task2 = new Task();
+        task2.setId(currentId++);
+        task2.setTitle("Test Task 2");
+        task2.setDescription("Description 2");
+        tasks.put(task2.getId(), task2);
     }
 
     @Override
     public Task save(Task task) {
-        task.setId(currentId++);
+        if (task.getId() == null) {
+            task.setId(currentId++);
+        }
         tasks.put(task.getId(), task);
         return task;
     }

@@ -1,44 +1,53 @@
 package com.mipt.sharipovrazil.service;
 
+import com.mipt.sharipovrazil.dto.TaskCreateDto;
+import com.mipt.sharipovrazil.dto.TaskResponseDto;
+import com.mipt.sharipovrazil.dto.TaskUpdateDto;
+import com.mipt.sharipovrazil.exception.TaskNotFoundException;
+import com.mipt.sharipovrazil.mapper.TaskMapper;
 import com.mipt.sharipovrazil.model.Task;
 import com.mipt.sharipovrazil.repository.TaskRepository;
 import com.mipt.sharipovrazil.scope.PrototypeScopedBean;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
+
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.stream.Collectors;
 
 /**
  * Сервис для управления задачами.
  *
  * <p>Содержит бизнес-логику приложения для работы с задачами.
- * Взаимодействует с репозиторием для доступа к данным и
- * с prototype-бином для генерации идентификаторов.</p>
+ * Взаимодействует с репозиторием для доступа к данным и с prototype-бином для генерации
+ * идентификаторов.</p>
  *
  * <p>Демонстрирует жизненный цикл бина через аннотации
- * {@link PostConstruct} и {@link PreDestroy}, а также
- * внедрение зависимостей через конструктор.</p>
+ * {@link PostConstruct} и {@link PreDestroy}, а также внедрение зависимостей через
+ * конструктор.</p>
  */
 
 @Service
 public class TaskService {
+
     private static final Logger logger = LoggerFactory.getLogger(TaskService.class);
 
     private final TaskRepository taskRepository;
     private final PrototypeScopedBean prototypeScopedBean;
+    private final TaskMapper taskMapper;
     private final Map<Long, Task> taskCache = new ConcurrentHashMap<>();
 
     @Autowired
-    public TaskService(TaskRepository taskRepository, PrototypeScopedBean prototypeScopedBean) {
+    public TaskService(TaskRepository taskRepository, PrototypeScopedBean prototypeScopedBean,
+            TaskMapper taskMapper) {
         this.taskRepository = taskRepository;
         this.prototypeScopedBean = prototypeScopedBean;
+        this.taskMapper = taskMapper;
     }
 
     @PostConstruct
@@ -58,43 +67,50 @@ public class TaskService {
         logger.info("Статистика сохранена в файл");
     }
 
-    public List<Task> getAllTasks() {
-        return taskRepository.findAll();
+    public List<TaskResponseDto> getAllTasks() {
+        return taskRepository.findAll().stream()
+                .map(taskMapper::toResponseDto)
+                .collect(Collectors.toList());
     }
 
-    public Task getTaskById(Long id) {
-        return taskRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Task not found with id: " + id));
+    public TaskResponseDto getTaskById(Long id) {
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() -> new TaskNotFoundException("Task not found with id: " + id));
+        return taskMapper.toResponseDto(task);
     }
 
-    public Task createTask(Task task) {
-        if (task == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Task cannot be null");
-        }
+    public TaskResponseDto createTask(TaskCreateDto createDto) {
+        Task task = taskMapper.toEntity(createDto);
         task.setId(prototypeScopedBean.generateId());
-        return taskRepository.save(task);
+        Task savedTask = taskRepository.save(task);
+        return taskMapper.toResponseDto(savedTask);
     }
 
-    public Task updateTask(Long id, Task task) {
-        if (task == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Task cannot be null");
-        }
-        if (!taskRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Task not found with id: " + id);
-        }
-        task.setId(id);
-        return taskRepository.update(task);
+    public TaskResponseDto updateTask(Long id, TaskUpdateDto updateDto) {
+        Task existingTask = taskRepository.findById(id)
+                .orElseThrow(() -> new TaskNotFoundException("Task not found with id: " + id));
+
+        taskMapper.updateEntity(updateDto, existingTask);
+        Task updatedTask = taskRepository.update(existingTask);
+
+        taskCache.put(id, updatedTask);
+
+        return taskMapper.toResponseDto(updatedTask);
     }
 
     public void deleteTask(Long id) {
         if (!taskRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Task not found with id: " + id);
+            throw new TaskNotFoundException("Task not found with id: " + id);
         }
         taskRepository.deleteById(id);
+        taskCache.remove(id);
     }
 
     public Map<Long, Task> getTaskCache() {
         return taskCache;
+    }
+
+    public long getTotalCount() {
+        return taskRepository.findAll().size();
     }
 }
