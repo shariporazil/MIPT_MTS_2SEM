@@ -3,6 +3,7 @@ package com.mipt.sharipovrazil.service;
 import com.mipt.sharipovrazil.dto.AttachmentResponseDto;
 import com.mipt.sharipovrazil.exception.AttachmentNotFoundException;
 import com.mipt.sharipovrazil.exception.TaskNotFoundException;
+import com.mipt.sharipovrazil.model.Task;
 import com.mipt.sharipovrazil.model.TaskAttachment;
 import com.mipt.sharipovrazil.repository.AttachmentRepository;
 import com.mipt.sharipovrazil.repository.TaskRepository;
@@ -10,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -42,20 +44,18 @@ public class AttachmentService {
         }
     }
 
+    @Transactional
     public AttachmentResponseDto storeAttachment(Long taskId, MultipartFile file) throws IOException {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("File is empty");
         }
 
-        // Проверка на размер файла
-        if (file.getSize() > 10 * 1024 * 1024) { // 10MB
+        if (file.getSize() > 10 * 1024 * 1024) {
             throw new IllegalArgumentException("File size exceeds limit: " + file.getSize() + " bytes");
         }
 
-        // Проверяем существование задачи
-        if (taskRepository.findById(taskId).isEmpty()) {
-            throw new TaskNotFoundException("Task not found with id: " + taskId);
-        }
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new TaskNotFoundException("Task not found with id: " + taskId));
 
         String originalFilename = file.getOriginalFilename();
         String extension = "";
@@ -70,7 +70,7 @@ public class AttachmentService {
         }
 
         TaskAttachment attachment = new TaskAttachment();
-        attachment.setTaskId(taskId);
+        attachment.setTask(task);
         attachment.setFileName(originalFilename);
         attachment.setStoredFileName(storedFileName);
         attachment.setContentType(file.getContentType());
@@ -97,6 +97,7 @@ public class AttachmentService {
         return new InputStreamResource(Files.newInputStream(filePath));
     }
 
+    @Transactional
     public void deleteAttachment(Long attachmentId) throws IOException {
         TaskAttachment attachment = getAttachment(attachmentId);
         Path filePath = uploadPath.resolve(attachment.getStoredFileName());
@@ -109,7 +110,7 @@ public class AttachmentService {
     }
 
     public List<AttachmentResponseDto> getAttachmentsByTaskId(Long taskId) {
-        return attachmentRepository.findByTaskId(taskId).stream()
+        return attachmentRepository.findByTask_Id(taskId).stream()
                 .map(this::mapToResponseDto)
                 .collect(Collectors.toList());
     }
