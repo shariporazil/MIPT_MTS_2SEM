@@ -1,18 +1,15 @@
-app:
-  name: "To-Do List Manager"
-  version: "1.0.0"
-  api:
-    version: "2.0.0"
-  upload:
-    dir: uploads
-  cors:
-    allowed-origin: "http://localhost:3000"
+server:
+  port: 8080
+  error:
+    path: /error
+    whitelabel:
+      enabled: false
 
 spring:
-  application:
-    name: sharipovrazil
   profiles:
     active: dev
+  application:
+    name: sharipovrazil
   servlet:
     multipart:
       max-file-size: 10MB
@@ -21,6 +18,22 @@ spring:
     enabled: true
     locations: classpath:db/migration
 
+app:
+  name: "To-Do List Manager MVP"
+  version: "1.0.0"
+  api:
+    version: "2.0.0"
+  upload:
+    dir: uploads
+  cors:
+    allowed-origin: "http://localhost:3000"
+
+logging:
+  level:
+    com.mipt.sharipovrazil: INFO
+    org.springframework.web: INFO
+    org.springframework.web.multipart: INFO
+
 springdoc:
   api-docs:
     path: /v3/api-docs
@@ -28,9 +41,3 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
     operations-sorter: method
-
-logging:
-  level:
-    com.mipt.sharipovrazil: INFO
-    org.springframework.web: INFO
-    org.springframework.web.multipart: INFO

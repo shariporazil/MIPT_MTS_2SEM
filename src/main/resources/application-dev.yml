@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 8081
 
 spring:
   datasource:
@@ -20,6 +20,9 @@ spring:
 logging:
   level:
     com.mipt.sharipovrazil: DEBUG
-    org.springframework.web: INFO
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    org.springframework.web: DEBUG
+    org.springframework.beans: DEBUG
+
+app:
+  name: "To-Do List Manager DEV"
+  version: "1.0.0-DEV"

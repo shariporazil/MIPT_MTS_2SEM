@@ -11,8 +11,14 @@ spring:
     hibernate:
       ddl-auto: validate
     open-in-view: false
+  flyway:
+    enabled: true
 
 logging:
   level:
     com.mipt.sharipovrazil: WARN
     org.springframework.web: ERROR
+
+app:
+  name: "To-Do List Manager PROD"
+  version: "1.0.0"
