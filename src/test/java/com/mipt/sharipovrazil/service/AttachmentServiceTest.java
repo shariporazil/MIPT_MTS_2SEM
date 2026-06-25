@@ -1,149 +1,123 @@
 package com.mipt.sharipovrazil.service;
 
-import com.mipt.sharipovrazil.dto.AttachmentResponseDto;
-import com.mipt.sharipovrazil.exception.AttachmentNotFoundException;
 import com.mipt.sharipovrazil.exception.TaskNotFoundException;
+import com.mipt.sharipovrazil.model.Priority;
 import com.mipt.sharipovrazil.model.Task;
 import com.mipt.sharipovrazil.model.TaskAttachment;
 import com.mipt.sharipovrazil.repository.AttachmentRepository;
 import com.mipt.sharipovrazil.repository.TaskRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.web.multipart.MultipartFile;
+import org.springframework.test.context.ActiveProfiles;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-@ExtendWith(MockitoExtension.class)
+@SpringBootTest
+@ActiveProfiles("test")
 class AttachmentServiceTest {
-
-    @Mock
-    private AttachmentRepository attachmentRepository;
-
-    @Mock
-    private TaskRepository taskRepository;
-
-    private AttachmentService attachmentService;
 
     @TempDir
     Path tempDir;
 
+    @Autowired
+    private AttachmentService attachmentService;
+
+    @Autowired
+    private TaskRepository taskRepository;
+
+    @Autowired
+    private AttachmentRepository attachmentRepository;
+
     private Task task;
-    private TaskAttachment attachment;
-    private MultipartFile multipartFile;
 
     @BeforeEach
-    void setUp() throws IOException {
-        // Создаем сервис вручную с tempDir
-        attachmentService = new AttachmentService(
-                tempDir.toString(),
-                attachmentRepository,
-                taskRepository
-        );
+    void setUp() {
+        task = new Task("Test Task", "Description");
+        task.setPriority(Priority.HIGH);
+        task = taskRepository.save(task);
+    }
 
-        task = new Task();
-        task.setId(1L);
-        task.setTitle("Test Task");
-
-        attachment = new TaskAttachment();
-        attachment.setId(1L);
-        attachment.setTaskId(1L);
-        attachment.setFileName("test.txt");
-        attachment.setStoredFileName("test-uuid.txt");
-        attachment.setContentType("text/plain");
-        attachment.setSize(100L);
-
-        multipartFile = new MockMultipartFile(
+    @Test
+    void storeAttachment_ShouldSaveFileAndMetadata() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
                 "file",
                 "test.txt",
                 "text/plain",
-                "Test content".getBytes()
+                "content".getBytes()
         );
+
+        var response = attachmentService.storeAttachment(task.getId(), file);
+
+        assertNotNull(response);
+        assertEquals("test.txt", response.getFileName());
+        assertEquals(7L, response.getSize());
+
+        List<TaskAttachment> attachments = attachmentRepository.findByTask_Id(task.getId());
+        assertEquals(1, attachments.size());
     }
 
     @Test
-    void storeAttachment_WhenTaskExists_ShouldSaveFileAndMetadata() throws IOException {
-        // given
-        when(taskRepository.findById(1L)).thenReturn(Optional.of(task));
-        when(attachmentRepository.save(any(TaskAttachment.class))).thenReturn(attachment);
+    void storeAttachment_WhenTaskNotFound_ShouldThrowException() {
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "test.txt",
+                "text/plain",
+                "content".getBytes()
+        );
 
-        // when
-        AttachmentResponseDto result = attachmentService.storeAttachment(1L, multipartFile);
-
-        // then
-        assertThat(result).isNotNull();
-        assertThat(result.getFileName()).isEqualTo("test.txt");
-        verify(attachmentRepository).save(any(TaskAttachment.class));
+        assertThrows(TaskNotFoundException.class,
+                () -> attachmentService.storeAttachment(999L, file));
     }
 
     @Test
-    void storeAttachment_WhenTaskDoesNotExist_ShouldThrowTaskNotFoundException() {
-        // given
-        when(taskRepository.findById(999L)).thenReturn(Optional.empty());
+    void deleteAttachment_ShouldRemoveFileAndMetadata() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "test.txt",
+                "text/plain",
+                "content".getBytes()
+        );
 
-        // when & then
-        assertThatThrownBy(() -> attachmentService.storeAttachment(999L, multipartFile))
-                .isInstanceOf(TaskNotFoundException.class);
+        var response = attachmentService.storeAttachment(task.getId(), file);
+        Long attachmentId = response.getId();
+
+        Optional<TaskAttachment> before = attachmentRepository.findById(attachmentId);
+        assertTrue(before.isPresent());
+
+        attachmentService.deleteAttachment(attachmentId);
+
+        Optional<TaskAttachment> after = attachmentRepository.findById(attachmentId);
+        assertTrue(after.isEmpty());
     }
 
     @Test
-    void getAttachment_WhenExists_ShouldReturnAttachment() {
-        // given
-        when(attachmentRepository.findById(1L)).thenReturn(Optional.of(attachment));
+    void getAttachmentsByTaskId_ShouldReturnAttachments() throws Exception {
+        MockMultipartFile file1 = new MockMultipartFile(
+                "file",
+                "test1.txt",
+                "text/plain",
+                "content1".getBytes()
+        );
+        MockMultipartFile file2 = new MockMultipartFile(
+                "file",
+                "test2.txt",
+                "text/plain",
+                "content2".getBytes()
+        );
 
-        // when
-        TaskAttachment result = attachmentService.getAttachment(1L);
+        attachmentService.storeAttachment(task.getId(), file1);
+        attachmentService.storeAttachment(task.getId(), file2);
 
-        // then
-        assertThat(result).isNotNull();
-        assertThat(result.getId()).isEqualTo(1L);
-    }
+        var attachments = attachmentService.getAttachmentsByTaskId(task.getId());
 
-    @Test
-    void getAttachment_WhenDoesNotExist_ShouldThrowAttachmentNotFoundException() {
-        // given
-        when(attachmentRepository.findById(999L)).thenReturn(Optional.empty());
-
-        // when & then
-        assertThatThrownBy(() -> attachmentService.getAttachment(999L))
-                .isInstanceOf(AttachmentNotFoundException.class);
-    }
-
-    @Test
-    void deleteAttachment_WhenExists_ShouldDeleteFileAndMetadata() throws IOException {
-        // given
-        when(attachmentRepository.findById(1L)).thenReturn(Optional.of(attachment));
-        doNothing().when(attachmentRepository).deleteById(1L);
-
-        // when
-        attachmentService.deleteAttachment(1L);
-
-        // then
-        verify(attachmentRepository).deleteById(1L);
-    }
-
-    @Test
-    void getAttachmentsByTaskId_ShouldReturnList() {
-        // given
-        when(attachmentRepository.findByTaskId(1L)).thenReturn(List.of(attachment));
-
-        // when
-        List<AttachmentResponseDto> result = attachmentService.getAttachmentsByTaskId(1L);
-
-        // then
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getFileName()).isEqualTo("test.txt");
+        assertEquals(2, attachments.size());
     }
 }

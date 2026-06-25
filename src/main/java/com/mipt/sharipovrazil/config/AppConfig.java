@@ -1,9 +1,8 @@
 package com.mipt.sharipovrazil.config;
 
-import com.mipt.sharipovrazil.repository.StubTaskRepository;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
 /**
  * Конфигурационный класс для явного создания бинов.
  *

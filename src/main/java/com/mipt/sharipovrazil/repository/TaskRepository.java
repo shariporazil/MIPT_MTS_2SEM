@@ -1,8 +1,16 @@
 package com.mipt.sharipovrazil.repository;
 
+import com.mipt.sharipovrazil.model.Priority;
 import com.mipt.sharipovrazil.model.Task;
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
+
 /**
  * Интерфейс репозитория для управления задачами.
  *
@@ -13,12 +21,21 @@ import java.util.Optional;
  * <p>Интерфейс следует паттерну Repository, абстрагируя
  * слой доступа к данным от бизнес-логики.</p>
  */
+@Repository
+public interface TaskRepository extends JpaRepository<Task, Long> {
 
-public interface TaskRepository {
-    Task save(Task task);
-    Optional<Task> findById(Long id);
-    List<Task> findAll();
-    Task update(Task task);
-    void deleteById(Long id);
-    boolean existsById(Long id);
+    List<Task> findByCompletedAndPriority(boolean completed, Priority priority);
+
+    @Query("""
+            SELECT t
+            FROM Task t
+            WHERE t.dueDate IS NOT NULL
+              AND t.dueDate BETWEEN :startDate AND :endDate
+            """)
+    List<Task> findTasksDueBetween(@Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
+
+    @EntityGraph(attributePaths = "attachments")
+    @Query("SELECT t FROM Task t")
+    List<Task> findAllWithAttachments();
 }
